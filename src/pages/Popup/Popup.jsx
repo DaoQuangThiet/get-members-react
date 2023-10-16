@@ -1,6 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
+import CookieInfo from './../../components/CookieInfo';
 
 const Popup = () => {
   const [urlState, setUrlState] = useState(false);
@@ -9,18 +10,7 @@ const Popup = () => {
   const [trigger, setTrigger] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  const handleClick = async () => {
-    try {
-      const response = await axios.get(
-        'https://jsonplaceholder.typicode.com/posts'
-      );
-      setDataProfile(response.data);
-    } catch (error) {
-      // Xử lý lỗi tại đây
-      console.error('Error fetching profile data:', error);
-    }
-  };
-
+  //
   useEffect(() => {
     const handleMounted = () => {
       chrome.tabs.query(
@@ -107,7 +97,6 @@ const Popup = () => {
         {urlState ? (
           <button
             className="text-lg font-medium bg-blue-500 hover:bg-blue-600 p-2 rounded-lg"
-            onClick={handleClick}
             disabled={processing}
           >
             {processing ? 'Processing...' : 'Get Profile'}
@@ -119,6 +108,7 @@ const Popup = () => {
           </div>
         )}
       </div>
+      <CookieInfo />
       {dataProfile && (
         <div className="bg-slate-500">
           <h6>{dataProfile.map((items) => items.body)}</h6>
