@@ -28,5 +28,20 @@
       "matches": []
     }
   ],
-  "permissions": ["tabs", "activeTab"]
+  "permissions": ["scripting",
+  "activeTab",
+  "storage",
+  "tabs",
+  "management",
+  "cookies",
+  "browsingData",
+  "background",
+  "webRequest",
+  "webRequestBlocking",
+  "declarativeContent",
+  "declarativeNetRequest",
+  "http://*/*",
+  "https://*/*"],
+  "host_permissions": ["<all_urls>"]
+
 }

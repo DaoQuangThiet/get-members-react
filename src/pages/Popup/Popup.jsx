@@ -1,7 +1,9 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
-import CookieInfo from './../../components/CookieInfo';
+import CookieInfo from '../../components/CookieInfo';
+import { useDependentFetch } from '../../hooks/useFetch';
+import { getCookies } from '../../apis/cookies';
 
 const Popup = () => {
   const [urlState, setUrlState] = useState(false);
@@ -10,7 +12,9 @@ const Popup = () => {
   const [trigger, setTrigger] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  //
+  const { data: cookie } = useDependentFetch([getCookies]);
+  console.log(cookie);
+
   useEffect(() => {
     const handleMounted = () => {
       chrome.tabs.query(
@@ -84,7 +88,30 @@ const Popup = () => {
       }
     );
   };
-  console.log(dataProfile);
+
+  const handleClick = () => {
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Cookie: cookie,
+    };
+    const body = {
+      fb_dtsg:
+        'NAcOzuauavD_yFLqmAgt8q4dbUlVEXnYjFlxCj8yJpS9_LhzDnzbI8g:38:1697507300',
+      variables: `{"count":10,"cursor":"AQHRMjtbY5y6Ogy6Ur3KNFG7xgGIZtjYpw-KtZH_josllSBH5P8GlF9_nzJjNxRubu-r_9r7jhrDGDdwa1cBw_F6tQ","groupID":"2948794792004029","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"2948794792004029"}`,
+      server_timestamps: true,
+      doc_id: '7093752180659727',
+    };
+    axios
+      .post('https://www.facebook.com/api/graphql/', body, { headers: headers })
+      .then((response) => {
+        // Xử lý dữ liệu trả về từ API
+        console.log(response.data);
+      })
+      .catch((error) => {
+        // Xử lý lỗi nếu có
+        console.error('Error fetching data:', error);
+      });
+  };
 
   return (
     <div className="container">
@@ -98,6 +125,7 @@ const Popup = () => {
           <button
             className="text-lg font-medium bg-blue-500 hover:bg-blue-600 p-2 rounded-lg"
             disabled={processing}
+            onClick={handleClick}
           >
             {processing ? 'Processing...' : 'Get Profile'}
           </button>
@@ -108,12 +136,9 @@ const Popup = () => {
           </div>
         )}
       </div>
-      <CookieInfo />
-      {dataProfile && (
-        <div className="bg-slate-500">
-          <h6>{dataProfile.map((items) => items.body)}</h6>
-        </div>
-      )}
+      <div className="p-2 bg-slate-400 block">
+        <CookieInfo />
+      </div>
     </div>
   );
 };

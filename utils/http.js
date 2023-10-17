@@ -1,23 +1,21 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios from 'axios';
 
 class Http {
-  protected readonly instance: AxiosInstance;
-
-  constructor(baseURL?: string) {
+  constructor(baseURL) {
     this.instance = axios.create({
-      baseURL,
+      baseURL: baseURL,
     });
   }
 
-  getInstance(): AxiosInstance {
+  getInstance() {
     return this.instance;
   }
 
-  setCookie(cookie: string): void {
+  setCookie(cookie) {
     this.instance.defaults.headers.common.Cookie = cookie;
   }
 
-  clearAuthorization(): void {
+  clearAuthorization() {
     delete this.instance.defaults.headers.common.Cookie;
   }
 }
@@ -27,7 +25,7 @@ export const http = {
 };
 
 export class HttpUtils {
-  static getDataFromHttpResponse<T>(response: AxiosResponse<T>) {
+  static getDataFromHttpResponse(response) {
     return response.data;
   }
 }

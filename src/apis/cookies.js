@@ -1,4 +1,4 @@
-const getCookies = async (): Promise<string> => {
+const getCookies = async () => {
   return new Promise((resolve, reject) => {
     let cookieToken = '';
     chrome.cookies.getAll(

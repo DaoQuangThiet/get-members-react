@@ -1,6 +1,6 @@
-import { http } from '../../utils/http';
+import { http } from './http';
 
-const setSession = async (cookie: string | null) => {
+const setSession = async (cookie) => {
   if (cookie) {
     localStorage.setItem('cookie', cookie);
     http.facebookInstance.setCookie(cookie);
