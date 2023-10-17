@@ -12,7 +12,6 @@ const CookieInfo = () => {
         console.log({ err });
       },
     });
-  console.log(data);
   
   const [cookie] = data || [];
   const [accountId, accessToken] = accessTokenData || [];

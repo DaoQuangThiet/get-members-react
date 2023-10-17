@@ -11,9 +11,10 @@ const Popup = () => {
   const [dataProfile, setDataProfile] = useState([]);
   const [trigger, setTrigger] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [cursor, setCursor] = useState('');
 
   const { data: cookie } = useDependentFetch([getCookies]);
-  console.log(cookie);
 
   useEffect(() => {
     const handleMounted = () => {
@@ -89,29 +90,57 @@ const Popup = () => {
     );
   };
 
-  const handleClick = () => {
+  const handleClick = async () => {
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       Cookie: cookie,
     };
     const body = {
       fb_dtsg:
-        'NAcOzuauavD_yFLqmAgt8q4dbUlVEXnYjFlxCj8yJpS9_LhzDnzbI8g:38:1697507300',
-      variables: `{"count":10,"cursor":"AQHRMjtbY5y6Ogy6Ur3KNFG7xgGIZtjYpw-KtZH_josllSBH5P8GlF9_nzJjNxRubu-r_9r7jhrDGDdwa1cBw_F6tQ","groupID":"2948794792004029","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"2948794792004029"}`,
-      server_timestamps: true,
+        'NAcNpzlu-3WNxK-Z7P-Nka3SIHya8BCVOOvH9rYQmfeTZwPbg8dJEGA:5:1697551621',
+      variables: `{"count":10,"cursor": "${cursor}","groupID":"2948794792004029","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"2948794792004029"}`,
       doc_id: '7093752180659727',
     };
-    axios
-      .post('https://www.facebook.com/api/graphql/', body, { headers: headers })
-      .then((response) => {
-        // Xử lý dữ liệu trả về từ API
-        console.log(response.data);
-      })
-      .catch((error) => {
-        // Xử lý lỗi nếu có
+    while (hasNextPage) {
+      try {
+        const response = await axios.post(
+          'https://www.facebook.com/api/graphql/',
+          body,
+          { headers: headers }
+        );
+        console.log('response', response);
+        const newData = response.data.data.node.new_members.edges;
+        setDataProfile((prevData) => [...prevData, ...newData]);
+
+        if (
+          response.data.data.node.new_members.page_info.has_next_page === false
+        ) {
+          setHasNextPage(false);
+          break;
+        } else {
+          const getcursor =
+            response.data.data.node.new_members.page_info.end_cursor;
+          setCursor(getcursor);
+        }
+      } catch (error) {
         console.error('Error fetching data:', error);
-      });
+        break;
+      }
+    }
   };
+  console.log(dataProfile);
+  console.log('cursor', cursor);
+
+  // axios.post('https://www.facebook.com/api/graphql/', body, { headers: headers })
+  // .then((response) => {
+  //   // Xử lý dữ liệu trả về từ API
+  //   setDataProfile(response.data);
+  //   console.log(response.data);
+  // })
+  // .catch((error) => {
+  //   // Xử lý lỗi nếu có
+  //   console.error('Error fetching data:', error);
+  // });
 
   return (
     <div className="container">
@@ -135,7 +164,18 @@ const Popup = () => {
             tool to work!
           </div>
         )}
+        {/* {dataProfile.data && (
+          <div className="bg-pink-200 block">
+            {dataProfile.data.node.new_members.edges.map((items) => (
+              <>
+                <p>{items.node.id}</p>
+                <p>{items.node.name}</p>
+              </>
+            ))}
+          </div>
+        )} */}
       </div>
+
       <div className="p-2 bg-slate-400 block">
         <CookieInfo />
       </div>
