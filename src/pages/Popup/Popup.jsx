@@ -9,9 +9,10 @@ import { getInformationAccount } from '../../apis/getAuthentication';
 const Popup = () => {
   const [urlState, setUrlState] = useState(false);
   const [dataProfile, setDataProfile] = useState([]);
-  const [processing, setProcessing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
-  const [stateTask, setStateTask] = useState(false);
+  const [buttonText, setButtonText] = useState('Get Profiles');
+  const [groupId, setGroupId] = useState();
+  const [currentUrl, setcurentUrl] = useState('');
 
   const { data: cookie } = useDependentFetch([getCookies]);
 
@@ -29,26 +30,45 @@ const Popup = () => {
           if (checkUrlFb.test(url)) {
             setUrlState(true);
           }
-          console.log(url);
+          setcurentUrl(url);
+          const fetchData = async () => {
+            try {
+              const res = await axios.get(currentUrl);
+              const resData = res.data;
+              console.log('Dtaa', resData);
+              const regex = /"groupID":"(\d+)"/;
+              const match = resData.match(regex);
+              if (match && match[1]) {
+                const getId = match[1];
+                setGroupId(getId);
+              } else {
+                console.log('No match found');
+              }
+            } catch (error) {
+              console.log('erorrrrrrr', error);
+            }
+          };
+          fetchData();
         }
       );
     };
     handleMounted();
-  }, []);
+  }, [currentUrl, groupId]);
 
   const handleClick = async () => {
+    console.log(groupId);
     let endCursor = '';
     const fbDtsg = localStorage.getItem('fb_dtsg');
     console.log('fbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsg', fbDtsg);
     while (hasNextPage) {
-      setProcessing(true);
+      setButtonText('Processing...');
       const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         Cookie: cookie,
       };
       const body = {
         fb_dtsg: fbDtsg,
-        variables: `{"count":10,"cursor": "${endCursor}","groupID":"2948794792004029","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"2948794792004029"}`,
+        variables: `{"count":10,"cursor": "${endCursor}","groupID":"${groupId}","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"${groupId}"}`,
         doc_id: '7093752180659727',
       };
       try {
@@ -61,6 +81,7 @@ const Popup = () => {
         setDataProfile((prevData) =>
           prevData.concat(responseData.data.node.new_members.edges)
         );
+        setButtonText('Done');
 
         if (!responseData.data.node.new_members.page_info.has_next_page) {
           setHasNextPage(false);
@@ -73,8 +94,6 @@ const Popup = () => {
         break;
       }
     }
-    setProcessing(false);
-    setStateTask(true);
   };
 
   const handleExport = () => {
@@ -86,8 +105,6 @@ const Popup = () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
     XLSX.writeFile(wb, 'LinkProfilew.xlsx');
   };
-  console.log(dataProfile);
-
   return (
     <div className="container">
       <div className="bg-blue-500 p-6">
@@ -99,18 +116,19 @@ const Popup = () => {
         {urlState ? (
           <div className="block">
             <button
-              className={`text-lg font-medium bg-blue-500 ${
-                !processing ? 'hover:bg-blue-600' : ''
-              } p-2 rounded-lg m-3 text-white`}
-              disabled={processing || stateTask}
+              className={`text-lg font-medium ${
+                buttonText === 'Processing...' || buttonText === 'Done'
+                  ? ''
+                  : 'hover:bg-blue-600'
+              } bg-blue-500  p-2 rounded-lg m-3 text-white`}
+              disabled={buttonText === 'Processing...' || buttonText === 'Done'}
               onClick={handleClick}
             >
-              {processing ? 'Processing...' : 'Done'}
+              {buttonText}
             </button>
-            {stateTask && (
+            {buttonText === 'Done' && (
               <button
                 className="text-lg font-medium bg-blue-500 hover:bg-blue-600 p-2 rounded-lg m-3 text-white"
-                disabled={processing}
                 onClick={handleExport}
               >
                 Export File
