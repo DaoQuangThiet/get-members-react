@@ -4,19 +4,19 @@ import * as XLSX from 'xlsx';
 import CookieInfo from '../../components/CookieInfo';
 import { useDependentFetch } from '../../hooks/useFetch';
 import { getCookies } from '../../apis/cookies';
+import { getInformationAccount } from '../../apis/getAuthentication';
 
 const Popup = () => {
   const [urlState, setUrlState] = useState(false);
-  const [numberProcess, setNumberprocess] = useState(0);
   const [dataProfile, setDataProfile] = useState([]);
-  const [trigger, setTrigger] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
-  const [cursor, setCursor] = useState('');
+  const [stateTask, setStateTask] = useState(false);
 
   const { data: cookie } = useDependentFetch([getCookies]);
 
   useEffect(() => {
+    getInformationAccount();
     const handleMounted = () => {
       chrome.tabs.query(
         {
@@ -29,118 +29,64 @@ const Popup = () => {
           if (checkUrlFb.test(url)) {
             setUrlState(true);
           }
+          console.log(url);
         }
       );
-      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.msg === 'getStatusTrigger') {
-          sendResponse({ data: trigger });
-        } else if (message.msg === 'arrayProfile') {
-          const ws = XLSX.utils.json_to_sheet(message.data);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'link');
-          XLSX.writeFile(wb, 'linkProdile.xlsx');
-          setProcessing(false);
-          sendResponse({
-            received: true,
-          });
-        } else if (message.msg === 'numberProcessing') {
-          setNumberprocess(message.data);
-        } else {
-          sendResponse('Not found');
-        }
-      });
     };
     handleMounted();
-  }, [trigger, processing, numberProcess]);
-
-  const setDomInfo = (res) => {
-    console.log('setDom', res);
-  };
-
-  const getLinks = () => {
-    setTrigger(true);
-    setProcessing(true);
-    chrome.tabs.query(
-      {
-        active: true,
-        currentWindow: true,
-      },
-      (tabs) => {
-        console.log('tabs getlink:', tabs);
-        chrome.tabs.sendMessage(tabs[0].id, { trigger: true }, setDomInfo);
-      }
-    );
-  };
-
-  const exportExcel = () => {
-    chrome.tabs.query(
-      {
-        active: true,
-        currentWindow: true,
-      },
-      (tabs) => {
-        chrome.tabs.sendMessage(
-          tabs[0].id,
-          {
-            export: true,
-          },
-          setDomInfo
-        );
-      }
-    );
-  };
+  }, []);
 
   const handleClick = async () => {
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Cookie: cookie,
-    };
-    const body = {
-      fb_dtsg:
-        'NAcNpzlu-3WNxK-Z7P-Nka3SIHya8BCVOOvH9rYQmfeTZwPbg8dJEGA:5:1697551621',
-      variables: `{"count":10,"cursor": "${cursor}","groupID":"2948794792004029","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"2948794792004029"}`,
-      doc_id: '7093752180659727',
-    };
+    let endCursor = '';
+    const fbDtsg = localStorage.getItem('fb_dtsg');
+    console.log('fbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsg', fbDtsg);
     while (hasNextPage) {
+      setProcessing(true);
+      const headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Cookie: cookie,
+      };
+      const body = {
+        fb_dtsg: fbDtsg,
+        variables: `{"count":10,"cursor": "${endCursor}","groupID":"2948794792004029","recruitingGroupFilterNonCompliant":false,"scale":1,"id":"2948794792004029"}`,
+        doc_id: '7093752180659727',
+      };
       try {
         const response = await axios.post(
           'https://www.facebook.com/api/graphql/',
           body,
-          { headers: headers }
+          { headers }
         );
-        console.log('response', response);
-        const newData = response.data.data.node.new_members.edges;
-        setDataProfile((prevData) => [...prevData, ...newData]);
+        const responseData = response.data;
+        setDataProfile((prevData) =>
+          prevData.concat(responseData.data.node.new_members.edges)
+        );
 
-        if (
-          response.data.data.node.new_members.page_info.has_next_page === false
-        ) {
+        if (!responseData.data.node.new_members.page_info.has_next_page) {
           setHasNextPage(false);
           break;
         } else {
-          const getcursor =
-            response.data.data.node.new_members.page_info.end_cursor;
-          setCursor(getcursor);
+          endCursor = responseData.data.node.new_members.page_info.end_cursor;
         }
       } catch (error) {
         console.error('Error fetching data:', error);
         break;
       }
     }
+    setProcessing(false);
+    setStateTask(true);
+  };
+
+  const handleExport = () => {
+    const filteredData = dataProfile.map((item) => {
+      return { id: item.node.id, name: item.node.name, url: item.node.url };
+    });
+    const ws = XLSX.utils.json_to_sheet(filteredData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    XLSX.writeFile(wb, 'LinkProfilew.xlsx');
   };
   console.log(dataProfile);
-  console.log('cursor', cursor);
-
-  // axios.post('https://www.facebook.com/api/graphql/', body, { headers: headers })
-  // .then((response) => {
-  //   // Xử lý dữ liệu trả về từ API
-  //   setDataProfile(response.data);
-  //   console.log(response.data);
-  // })
-  // .catch((error) => {
-  //   // Xử lý lỗi nếu có
-  //   console.error('Error fetching data:', error);
-  // });
 
   return (
     <div className="container">
@@ -151,29 +97,48 @@ const Popup = () => {
       </div>
       <div className="p-6 text-center m-8">
         {urlState ? (
-          <button
-            className="text-lg font-medium bg-blue-500 hover:bg-blue-600 p-2 rounded-lg"
-            disabled={processing}
-            onClick={handleClick}
-          >
-            {processing ? 'Processing...' : 'Get Profile'}
-          </button>
+          <div className="block">
+            <button
+              className={`text-lg font-medium bg-blue-500 ${
+                !processing ? 'hover:bg-blue-600' : ''
+              } p-2 rounded-lg m-3 text-white`}
+              disabled={processing || stateTask}
+              onClick={handleClick}
+            >
+              {processing ? 'Processing...' : 'Done'}
+            </button>
+            {stateTask && (
+              <button
+                className="text-lg font-medium bg-blue-500 hover:bg-blue-600 p-2 rounded-lg m-3 text-white"
+                disabled={processing}
+                onClick={handleExport}
+              >
+                Export File
+              </button>
+            )}
+            <div>
+              <p className="rounded-full text-green-400 text-4xl">
+                {dataProfile.length}
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="text-lg font-medium bg-blue-500 p-2 rounded-lg">
             You need to access the group that you have joined in order for the
             tool to work!
           </div>
         )}
-        {/* {dataProfile.data && (
+        {dataProfile && (
           <div className="bg-pink-200 block">
-            {dataProfile.data.node.new_members.edges.map((items) => (
-              <>
+            {dataProfile.map((items, index) => (
+              <React.Fragment key={index}>
                 <p>{items.node.id}</p>
                 <p>{items.node.name}</p>
-              </>
+                <p>{items.node.url}</p>
+              </React.Fragment>
             ))}
           </div>
-        )} */}
+        )}
       </div>
 
       <div className="p-2 bg-slate-400 block">
