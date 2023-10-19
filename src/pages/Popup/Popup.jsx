@@ -12,7 +12,6 @@ const Popup = () => {
   const [currentUrl, setcurentUrl] = useState('');
 
   useEffect(() => {
-    getInformationAccount();
     const handleMounted = () => {
       chrome.tabs.query(
         {
@@ -23,27 +22,28 @@ const Popup = () => {
           const url = tabs[0].url;
           const checkUrlFb = /https:\/\/www.facebook.com\/groups\/*/;
           if (checkUrlFb.test(url)) {
+            getInformationAccount();
             setUrlState(true);
-          }
-          setcurentUrl(url);
-          const fetchData = async () => {
-            try {
-              const res = await axios.get(currentUrl);
-              const resData = res.data;
-              const regex = /"groupID":"(\d+)"/;
-              const match = resData.match(regex);
-              if (match && match[1]) {
-                const getId = match[1];
-                setGroupId(getId);
-              } else {
-                console.log('No match found');
+            setcurentUrl(url);
+            const fetchData = async () => {
+              try {
+                const res = await axios.get(currentUrl);
+                const resData = res.data;
+                const regex = /"groupID":"(\d+)"/;
+                const match = resData.match(regex);
+                if (match && match[1]) {
+                  const getId = match[1];
+                  setGroupId(getId);
+                } else {
+                  console.log('No match found');
+                }
+              } catch (error) {
+                console.log('erorrrrrrr', error);
+                throw new Error('Không thể lấy groupId');
               }
-            } catch (error) {
-              console.log('erorrrrrrr', error);
-              throw new Error('Không thể lấy groupId');
-            }
-          };
-          fetchData();
+            };
+            fetchData();
+          }
         }
       );
     };
