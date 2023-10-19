@@ -1,11 +1,8 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import * as XLSX from 'xlsx';
-import CookieInfo from '../../components/CookieInfo';
-import { useDependentFetch } from '../../hooks/useFetch';
-import { getCookies } from '../../apis/cookies';
 import { getInformationAccount } from '../../apis/getAuthentication';
-
+import loading from '../../assets/img/loading.gif';
 const Popup = () => {
   const [urlState, setUrlState] = useState(false);
   const [dataProfile, setDataProfile] = useState([]);
@@ -13,8 +10,6 @@ const Popup = () => {
   const [buttonText, setButtonText] = useState('Get Profiles');
   const [groupId, setGroupId] = useState();
   const [currentUrl, setcurentUrl] = useState('');
-
-  const { data: cookie } = useDependentFetch([getCookies]);
 
   useEffect(() => {
     getInformationAccount();
@@ -35,7 +30,6 @@ const Popup = () => {
             try {
               const res = await axios.get(currentUrl);
               const resData = res.data;
-              console.log('Dtaa', resData);
               const regex = /"groupID":"(\d+)"/;
               const match = resData.match(regex);
               if (match && match[1]) {
@@ -46,6 +40,7 @@ const Popup = () => {
               }
             } catch (error) {
               console.log('erorrrrrrr', error);
+              throw new Error('Không thể lấy groupId');
             }
           };
           fetchData();
@@ -56,15 +51,12 @@ const Popup = () => {
   }, [currentUrl, groupId]);
 
   const handleClick = async () => {
-    console.log(groupId);
     let endCursor = '';
     const fbDtsg = localStorage.getItem('fb_dtsg');
-    console.log('fbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsgfbDtsg', fbDtsg);
     while (hasNextPage) {
       setButtonText('Processing...');
       const headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Cookie: cookie,
       };
       const body = {
         fb_dtsg: fbDtsg,
@@ -112,7 +104,7 @@ const Popup = () => {
           Get Members Groups Facebook
         </h2>
       </div>
-      <div className="p-6 text-center m-8">
+      <div className="p-6 text-center m-4">
         {urlState ? (
           <div className="block">
             <button
@@ -135,10 +127,21 @@ const Popup = () => {
               </button>
             )}
             <div>
-              <p className="rounded-full text-green-400 text-4xl">
-                {dataProfile.length}
+              <p className="rounded-full text-green-400 text-2xl">
+                {buttonText === 'Done'
+                  ? `Number of scanned uids: ${dataProfile.length}`
+                  : `
+                Number Of UIDs: ${dataProfile.length}
+                `}
               </p>
             </div>
+            {buttonText === 'Processing...' && (
+              <img
+                className="w-full h-40 object-contain"
+                src={loading}
+                alt="Loading..."
+              />
+            )}
           </div>
         ) : (
           <div className="text-lg font-medium bg-blue-500 p-2 rounded-lg">
@@ -146,21 +149,6 @@ const Popup = () => {
             tool to work!
           </div>
         )}
-        {dataProfile && (
-          <div className="bg-pink-200 block">
-            {dataProfile.map((items, index) => (
-              <React.Fragment key={index}>
-                <p>{items.node.id}</p>
-                <p>{items.node.name}</p>
-                <p>{items.node.url}</p>
-              </React.Fragment>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="p-2 bg-slate-400 block">
-        <CookieInfo />
       </div>
     </div>
   );

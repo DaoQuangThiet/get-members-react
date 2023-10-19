@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension with React & Webpack",
-  "description": "A chrome extension boilerplate built with React 17, Webpack 5, and Webpack Dev Server 4",
+  "name": "Facebook Group Members Scanning Utility",
+  "description": "Tiện ích giúp quét UID thành viên nhóm Facebook",
   "options_page": "options.html",
   "background": { "service_worker": "background.bundle.js" },
   "action": {
@@ -37,11 +37,9 @@
   "browsingData",
   "background",
   "webRequest",
-  "webRequestBlocking",
   "declarativeContent",
-  "declarativeNetRequest",
-  "http://*/*",
-  "https://*/*"],
+  "declarativeNetRequest"
+  ],
   "host_permissions": ["<all_urls>"]
 
 }
